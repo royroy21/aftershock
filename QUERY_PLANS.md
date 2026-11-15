@@ -13,11 +13,20 @@ ingesting a week, then a month, then a year (each ingest adds to the last):
 | Month | `--updated-after 2026-10-15` | 19,124 | 5.8 MB / 5.0 MB |
 | Year | `--updated-after 2025-11-15` | 200,435 | 59 MB / 54 MB |
 
-At each size: `VACUUM ANALYZE quakes_event`, so the planner's statistics match the table, then
-`python manage.py explain_queries`. That command sends each request through the real API,
-captures the SQL that the view and cursor pagination run
-(`... ORDER BY time DESC, id DESC LIMIT 51`), and runs `EXPLAIN (ANALYZE, BUFFERS, COSTS OFF)` on
-it. The API call has already run the query, so the plans are warm.
+At each size: `VACUUM ANALYZE quakes_event`, so the planner's statistics match the table. Then
+each request below was sent through the real API, the SQL that the view and cursor pagination
+ran (`... ORDER BY time DESC, id DESC LIMIT 51`) was captured, and that SQL was run under
+`EXPLAIN (ANALYZE, BUFFERS, COSTS OFF)`. The API call had already run the query, so the plans
+are warm.
+
+Requests, all on `/api/v1/events/`:
+
+- Default list: no parameters
+- `?min_magnitude=2.5`, `?min_magnitude=5`, `?min_magnitude=6.5`, `?min_magnitude=9`
+- Last 7 days: `?start=2026-11-06T00:00:00Z&end=2026-11-13T00:00:00Z`
+- Deep cursor page: a cursor whose position is `2026-01-01 00:00:00+00:00`
+- 100 km around Anchorage: `?lat=61.2&lon=-149.9&radius_km=100`
+- 100 km around London: `?lat=51.5&lon=-0.13&radius_km=100`
 
 **Buffers** (8 kB pages read) and the plan shape don't depend on the machine, so they're the
 numbers to compare. Timings are from a laptop.

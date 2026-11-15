@@ -56,7 +56,7 @@ curl "localhost:8000/api/v1/events/?min_magnitude=big"
 | Admin (read-only) | http://localhost:8000/admin/ after `make manage ARGS=createsuperuser` |
 | Tests | `make test` |
 | Lint | `make lint` |
-| Query plans | `make explain`, written up in [QUERY_PLANS.md](QUERY_PLANS.md) |
+| Query plans | [QUERY_PLANS.md](QUERY_PLANS.md) |
 
 Filters on `/api/v1/events/`: `start`, `end` (origin time, ISO 8601), `min_magnitude`,
 `max_magnitude`, and `lat` + `lon` + `radius_km` (all three together, radius up to 2,000 km).

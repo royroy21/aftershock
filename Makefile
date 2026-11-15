@@ -1,4 +1,4 @@
-.PHONY: usage up down build logs shell manage migrate migrations test lint ingest explain
+.PHONY: usage up down build logs shell manage migrate migrations test lint ingest
 
 usage:
 	@echo "Available commands:"
@@ -13,7 +13,6 @@ usage:
 	@echo "test............................Run the test suite (pytest)"
 	@echo "lint............................Lint with ruff"
 	@echo "ingest..........................Ingest from USGS now, e.g. make ingest ARGS=\"--updated-after 2026-01-01\""
-	@echo "explain.........................Print query plans for typical API requests"
 
 up:
 	docker compose up --build
@@ -47,6 +46,3 @@ lint:
 
 ingest:
 	docker compose run --rm web python manage.py ingest --sync ${ARGS}
-
-explain:
-	docker compose run --rm web python manage.py explain_queries
