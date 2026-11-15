@@ -1,0 +1,85 @@
+# Every value has a dev-safe default, so `docker compose up` needs no .env file.
+# Override any of them via a local .env (see .env.example).
+
+x-app: &app
+  build: .
+  image: aftershock:dev
+  # Source mounted into every app service so they all run the same code without a rebuild:
+  # runserver autoreloads; the worker needs `docker compose restart worker`. The venv lives in
+  # /opt/venv, outside the mount, so it isn't shadowed.
+  volumes:
+    - .:/app
+  environment:
+    DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-only-insecure-secret-key}
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+    POSTGRES_HOST: db
+    POSTGRES_PORT: "5432"
+    POSTGRES_DB: ${POSTGRES_DB:-aftershock}
+    POSTGRES_USER: ${POSTGRES_USER:-aftershock}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aftershock}
+    CELERY_BROKER_URL: redis://redis:6379/0
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_started
+
+services:
+  db:
+    # Multi-arch (amd64 + arm64) build of PostGIS by a docker-postgis maintainer.
+    # The official postgis/postgis image is amd64-only and runs emulated on Apple Silicon.
+    image: imresamu/postgis:17-3.5
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aftershock}
+      POSTGRES_USER: ${POSTGRES_USER:-aftershock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aftershock}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # The only healthcheck: Postgres accepts connections well after its container starts, and
+    # migrate (and so web/worker) must wait for that. Redis is ready almost instantly.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+
+  # Migrations run once, in their own one-off container, before anything that uses the DB.
+  # Running them inside `web` would let `worker` start against a not-yet-migrated schema, and
+  # every web replica would race to migrate. A failed migration stops web/worker from starting.
+  # (Production equivalent: a release step / Kubernetes Job, with backwards-compatible migrations.)
+  migrate:
+    <<: *app
+    command: python manage.py migrate --noinput
+    restart: "no"
+
+  web:
+    <<: *app
+    command: python manage.py runserver 0.0.0.0:8000
+    depends_on: &after-migrate
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A aftershock worker --loglevel=info --concurrency=2
+    depends_on: *after-migrate
+
+  # Enqueues the daily ingest (CELERY_BEAT_SCHEDULE); the worker runs it. Off by default: run the
+  # first ingest by hand, then enable with COMPOSE_PROFILES=scheduler (see README).
+  beat:
+    <<: *app
+    profiles: ["scheduler"]
+    # State file in /tmp, not /app, so it doesn't land in the mounted source tree.
+    command: celery -A aftershock beat --loglevel=info -s /tmp/celerybeat-schedule
+    depends_on: *after-migrate
+
+volumes:
+  pgdata:

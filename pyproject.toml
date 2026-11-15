@@ -1,0 +1,39 @@
+[project]
+name = "aftershock"
+version = "0.1.0"
+description = "Ingests USGS earthquake events into PostGIS and serves them through a filterable REST API."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "django>=5.2,<5.3",
+    "djangorestframework>=3.16",
+    "drf-spectacular>=0.28",
+    "celery[redis]>=5.5",
+    "psycopg[binary]>=3.2",
+    "requests>=2.32",
+    "pydantic>=2.11",
+]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.0",
+    "pytest>=8.4",
+    "pytest-django>=4.11",
+    "responses>=0.25",
+    "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "aftershock.settings"
+python_files = ["test_*.py"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
