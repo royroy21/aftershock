@@ -1,45 +1,19 @@
-.PHONY: \
-    up \
-    down \
-    build \
-    logs \
-    shell \
-    manage \
-    migrate \
-    migrations \
-    test \
-    lint \
-    ingest \
-    explain \
+.PHONY: usage up down build logs shell manage migrate migrations test lint ingest explain
 
 usage:
-	@echo "up..............................docker compose up"
-	@echo "down............................docker compose down"
-	@echo "build...........................docker compose build"
-	@echo "logs............................docker compose logs -f"
-	@echo "shell...........................Django's shell plus command"
-	@echo "manage..........................Django's manage command"
-	@echo "migrate.........................Run Django migrations"
-	@echo "migrations......................Create Django migrations"
-	@echo "test............................Run Django tests"
-	@echo "lint............................Ruff Linting"
-	@echo "lint............................Ruff Linting"
-
-
 	@echo "Available commands:"
-	@echo "bash............................Enter django server with bash shell prompt"
-	@echo "chown...........................Change ownership of files to own user"
-	@echo "clear_cache.....................Clears redis cache"
-	@echo "clear_pyc.......................Remove all pyc files"
-	@echo "help............................Display available commands"
-	@echo "manage..........................Django's manage.py command"
+	@echo "up..............................Build and start everything (docker compose up --build)"
+	@echo "down............................Stop everything (docker compose down)"
+	@echo "build...........................Build the images"
+	@echo "logs............................Follow the logs of all services"
+	@echo "shell...........................Django shell in the running web container"
+	@echo "manage..........................Any manage.py command, e.g. make manage ARGS=createsuperuser"
 	@echo "migrate.........................Run Django migrations"
 	@echo "migrations......................Create Django migrations"
-	@echo "psql............................Connect to postgis server"
-	@echo "shell...........................Django's shell plus command"
-	@echo "test............................Run tests for the project"
-	@echo "ingest..........................Ingest quake events"
-	@echo "explain.........................Custom Django management command to explain queries"
+	@echo "test............................Run the test suite (pytest)"
+	@echo "lint............................Lint with ruff"
+	@echo "ingest..........................Ingest from USGS now, e.g. make ingest ARGS=\"--updated-after 2026-01-01\""
+	@echo "explain.........................Print query plans for typical API requests"
 
 up:
 	docker compose up --build
