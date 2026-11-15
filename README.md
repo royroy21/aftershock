@@ -5,7 +5,7 @@ through a fast, filterable JSON API: by time, magnitude and distance from a poin
 
 Django 5.2 · DRF · PostgreSQL 17 + PostGIS · Celery + Redis · Docker 29.1.3 · Docker Compose 5.0.1
 
-This project makes use of a Makefile found at the root. This provides shortcuts to command commands used.
+This project makes use of a Makefile found at the root. This provides shortcuts to common commands used.
 To view all commands available run `make` at root.
 
 ## Quick start
@@ -143,10 +143,11 @@ scans). Most requests read the same handful of pages at every size.
 `make test` (pytest, against the real PostGIS database). The tests sit where our own logic is,
 and leave out what Django, DRF, pydantic and urllib3 already test:
 
-- `ingestion/tests/test_parsing.py`: real USGS records (captured fixtures), merge stubs, every
-  rejection rule.
+- `ingestion/tests/test_parsing.py`: real USGS records (captured fixtures), merge stubs, the main
+  rejection rules.
 - `ingestion/tests/test_writer.py`: the "strictly newer wins" rule: inserts, re-runs are no-ops,
-  older copies can't undo a deletion or merge, duplicate ids within a page.
+  newer versions overwrite, older or same versions are ignored, an older copy can't undo a
+  deletion, merges are applied once and ignore ids we never stored.
 - `ingestion/tests/test_client.py`: retries then succeeds, failures become `USGSError`, empty and
   unusable responses.
 - `quakes/tests/test_api.py`: ordering and shape, deleted/merged hidden, **one SQL query per

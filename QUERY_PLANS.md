@@ -15,9 +15,9 @@ ingesting a week, then a month, then a year (each ingest adds to the last):
 
 At each size: `VACUUM ANALYZE quakes_event`, so the planner's statistics match the table, then
 `python manage.py explain_queries`. That command sends each request through the real API,
-captures the SQL that the view and cursor pagination run (`... ORDER BY time DESC, id DESC LIMIT 51`),
-and runs `EXPLAIN (ANALYZE, BUFFERS)` on it. The API call has already run the query, so the
-plans are warm.
+captures the SQL that the view and cursor pagination run
+(`... ORDER BY time DESC, id DESC LIMIT 51`), and runs `EXPLAIN (ANALYZE, BUFFERS, COSTS OFF)` on
+it. The API call has already run the query, so the plans are warm.
 
 **Buffers** (8 kB pages read) and the plan shape don't depend on the machine, so they're the
 numbers to compare. Timings are from a laptop.
@@ -38,8 +38,7 @@ Buffers and execution time at each size. ⚠ marks a request whose plan changed 
 | ⚠ 100 km around Anchorage (dense) | Parallel bitmap scan on GiST `location` → top-N sort | 91 · 0.2 ms | 365 · 0.5 ms | **3,066 · 5.7 ms** |
 | 100 km around London (sparse) | Index Scan on GiST `location`, nothing found | 2 · 0.01 ms | 1 · 0.01 ms | 25 · 0.06 ms |
 
-The other seven requests stay between 0.01 and 0.3 ms at every size, so they're left off the
-charts. The x-axis is evenly spaced, not to scale: the table grows 45× from left to right.
+The seven requests not marked ⚠ stay between 0.01 and 0.3 ms at every size.
 
 ## What the plans show
 
